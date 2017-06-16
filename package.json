@@ -1,0 +1,24 @@
+{
+  "name": "koa-api-combo",
+  "version": "1.0.0",
+  "description": "proxy multiple http or https requests, and response the result array by combine all the result.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yss/node-api-combo.git"
+  },
+  "keywords": [
+    "node",
+    "api",
+    "combo"
+  ],
+  "author": "yss",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yss/node-api-combo/issues"
+  },
+  "homepage": "https://github.com/yss/node-api-combo#readme"
+}
