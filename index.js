@@ -10,17 +10,13 @@ const REG_URLS = /(\?|&)urls=([^&]+)(&?)/;
  * /combo?urls=/xx,/xxx&...
  *
  * @param {string} path
- * @param {Object} config
- * @param {string} config.apiHost
- * @param {number} [config.dnsCacheTime=10] the time for dns cache, default 10 seconds
- * @param {number} [config.timeout=10] timeout for each api request, default 10 seconds
- * @param {string} [config.headers='cookie,user-agent,referrer']
+ * @param {Object} config the same as ApiRequest
  */
 function Combo (path, config) {
     const apiRequest = new ApiRequest(config);
 
     return async function (ctx, next) {
-        if (ctx.path.indexOf(path) !== 0) {
+        if (path !== ctx.path) {
             return await next();
         }
 
@@ -38,10 +34,13 @@ function Combo (path, config) {
             };
             return;
         }
-
         ctx.type = 'json';
-        await Promise.all(urls.split(',').map(url => apiRequest.get(ctx, url + search)))
-            .then(function (body) {
+        await Promise.all(
+                urls.split(',').map(function (url) {
+                    url += url.indexOf('?') > -1 ? search.replace('?', '&') : search;
+                    return apiRequest.get(ctx, url);
+                })
+            ).then(function (body) {
                 ctx.body = '[' + body.join(',') + ']';
             }, function (err) {
                 if (err && err.status && err.body) {

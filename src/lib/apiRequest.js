@@ -4,26 +4,29 @@
 'use strict';
 const dns = require('dns');
 const Http = require('http');
+const Https = require('https');
 const Assert = require('assert');
 
-const Agent = require('http').Agent;
-
-const agent = new Agent({
+const CONF_AGENT = {
     keepAlive: true,
     keepAliveMsecs: 4096,
     maxSockets: Number.MAX_SAFE_INTEGER,
     maxFreeSockets: 256
-});
+};
+const HttpAgent = new Http.Agent(CONF_AGENT);
+const HttpsAgent = new Https.Agent(CONF_AGENT);
 
 class ApiRequest {
 
     /**
+     * request data from api server
      *
      * @param config
      * @param {string} config.apiHost
-     * @param {number} [config.dnsCacheTime=10] the time for dns cache, default 10 seconds
+     * @param {string} [config.protocol=http] the protocol that request api server
+     * @param {number} [config.dnsCacheTime=10] the time for dns cache, default 10 seconds, do not use dns cache if set 0
      * @param {number} [config.timeout=10] timeout for each api request, default 10 seconds
-     * @param {string} [config.headers='cookie,user-agent,referrer']
+     * @param {string} [config.headers='Cookie,User-Agent,Referrer'] the header you want to send to api server
      */
     constructor (config) {
         Assert(!!config.apiHost, 'apiHost must exists');
@@ -33,8 +36,17 @@ class ApiRequest {
             timeout: (config.timeout || 10) * 1000
         };
 
-        this._lookup(config.apiHost, (config.dnsCacheTime || 10) * 1000);
-        this.headers = (config.headers || 'cookie,user-agent,referrer').split(',');
+        if (config.dnsCacheTime !== 0) {
+            this._lookup(config.apiHost, (config.dnsCacheTime || 10) * 1000);
+        }
+        if (config.protocol === 'https') {
+            this.client = Https;
+            this.agent = HttpsAgent;
+        } else {
+            this.client = Http;
+            this.agent = HttpAgent;
+        }
+        this.headers = (config.headers || 'Cookie,User-Agent,Referrer').split(',');
     }
 
     /**
@@ -58,17 +70,24 @@ class ApiRequest {
     }
 
     _getHeaders (ctx) {
-        return this.headers.map(key => ctx.get(key));
+        let headers = {};
+
+        this.headers.forEach(function (key) {
+            headers[key] = ctx.get(key) || '';
+        });
+
+        return headers;
     }
 
     get (ctx, path) {
         let options = Object.assign({
             path,
-            agent,
-            // headers: this._getHeaders(ctx)
+            agent: this.agent,
+            headers: this._getHeaders(ctx)
         }, this.config);
-        return new Promise(function (resolve, reject) {
-            const req = Http.request(options, function (res) {
+
+        return new Promise((resolve, reject) => {
+            const req = this.client.request(options, function (res) {
                 let body = '';
                 res.on('data', function (chunk) {
                     body += chunk;
