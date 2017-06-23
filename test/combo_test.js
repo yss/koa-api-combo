@@ -6,14 +6,6 @@
 require('should');
 const Combo = require('../index.js');
 
-// describe('Koa-api-combo', function () {
-// });
-const HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-    'Cookie': 'count=1',
-    // 'referrer': ''
-};
-
 const PATH_JSON = '/static/test/';
 const RESULT_COMBO_A = [{ a: 1 }];
 const RESULT_COMBO_B = [{ b: 1 }];
@@ -33,7 +25,10 @@ async function simulator(obj, callback) {
     let ctx = Object.assign({
         path: '/combo',
         get (key) {
-            return HEADERS[key];
+            if (key === 'User-Agent') {
+                return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36' + Math.random().toString().substr(0, 3);
+            }
+            return '';
         }
     }, obj.ctx || {});
 
@@ -66,6 +61,7 @@ async function simulator(obj, callback) {
 }
 
 describe('Koa-Api-Combo', function () {
+    this.timeout(12000);
     describe('Request', function () {
         it('should be return correct value when get with http protocol', function () {
             return simulator({
@@ -88,6 +84,21 @@ describe('Koa-Api-Combo', function () {
                 }
             }, async function (ctx) {
                 ctx.body.should.be.deepEqual(RESULT_COMBO_A);
+            });
+        });
+
+        it('should be return correct value when get with https protocol and use compress:true', function () {
+            return simulator({
+                ctx: {
+                    urls: '/yss/koa-api-combo/master/test/data/b.json'
+                },
+                combo: {
+                    apiHost: 'raw.githubusercontent.com',
+                    protocol: 'https',
+                    compress: true
+                }
+            }, async function (ctx) {
+                ctx.body.should.be.deepEqual(RESULT_COMBO_B);
             });
         });
 
