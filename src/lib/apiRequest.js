@@ -43,9 +43,6 @@ class ApiRequest {
         };
         this.timeout = (config.timeout || 10) * 1000;
 
-        if (config.dnsCacheTime !== 0) {
-            this._lookup(config.apiHost, (config.dnsCacheTime || 10) * 1000);
-        }
         if (config.protocol === 'https') {
             this.client = Https;
             this.agent = HttpsAgent;
@@ -55,6 +52,7 @@ class ApiRequest {
         }
         this.headers = {
             Accept: '*/*',
+            Host: config.apiHost,
             'User-Agent': 'KoaApiCombo/1.0'
         };
 
@@ -62,6 +60,10 @@ class ApiRequest {
             this.headers['Accept-Encoding'] = 'gzip,deflate';
         }
         this.proxyHeaders = (config.headers || 'Cookie,User-Agent,Referrer').split(',');
+
+        if (config.dnsCacheTime !== 0) {
+            this._lookup(config.apiHost, (config.dnsCacheTime || 10) * 1000);
+        }
     }
 
     /**
