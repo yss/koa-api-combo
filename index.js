@@ -42,7 +42,7 @@ function Combo (path, config) {
                 })
             ).then(function (body) {
                 ctx.body = '[' + body.join(',') + ']';
-            }, function (err) {
+            }).catch(function (err) {
                 if (err && err.status && err.body) {
                     ctx.status = err.status;
                     ctx.body = err.body;
@@ -51,10 +51,10 @@ function Combo (path, config) {
                 ctx.status = 404;
                 ctx.body = {
                     status: 404,
-                    message: (err && err.message) || 'request api error'
+                    message: (err && err.message) || 'request api error.'
                 };
             });
-    }
+    };
 }
 
 module.exports = Combo;

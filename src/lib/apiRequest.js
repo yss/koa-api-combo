@@ -27,7 +27,7 @@ class ApiRequest {
     /**
      * request data from api server
      *
-     * @param config
+     * @param {Object} config
      * @param {string} config.apiHost
      * @param {string} [config.protocol=http] the protocol that request api server.
      * @param {number} [config.dnsCacheTime=10] the time for dns cache, default 10 seconds, do not use dns cache if set 0.
@@ -137,7 +137,10 @@ class ApiRequest {
                     if (statusCode < 200 || statusCode >= 300) {
                         return reject({
                             status: statusCode,
-                            body
+                            body: {
+                                path,
+                                body
+                            }
                         });
                     }
                     resolve(body);
