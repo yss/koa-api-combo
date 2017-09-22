@@ -1,6 +1,6 @@
 {
   "name": "koa-api-combo",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "proxy multiple http or https requests, and response the result array by combine all the result.",
   "main": "index.js",
   "scripts": {

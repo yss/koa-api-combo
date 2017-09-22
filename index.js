@@ -37,6 +37,10 @@ function Combo (path, config) {
         ctx.type = 'json';
         await Promise.all(
                 urls.split(',').map(function (url) {
+                    // FIX: inner network probing attack
+                    if (url.indexOf('/') !== 0) {
+                        url = '/' + url;
+                    }
                     url += url.indexOf('?') > -1 ? search.replace('?', '&') : search;
                     return apiRequest.get(ctx, url);
                 })
