@@ -8,6 +8,7 @@ const Https = require('https');
 const Zlib = require('zlib');
 const Assert = require('assert');
 
+const VERSION = require('../../package.json').version;
 const OPTION_ZLIB = {
     flush: Zlib.Z_SYNC_FLUSH,
     finishFlush: Zlib.Z_SYNC_FLUSH
@@ -53,13 +54,13 @@ class ApiRequest {
         this.headers = {
             Accept: '*/*',
             Host: config.apiHost,
-            'User-Agent': 'KoaApiCombo/1.0'
+            'User-Agent': 'KoaApiCombo/' + VERSION
         };
 
         if (config.compress) {
             this.headers['Accept-Encoding'] = 'gzip,deflate';
         }
-        this.proxyHeaders = (config.headers || 'Cookie,User-Agent,Referrer').split(',');
+        this.proxyHeaders = (config.headers || 'Cookie,User-Agent,Referrer,X-Forwarded-For').split(',');
 
         if (config.dnsCacheTime !== 0) {
             this._lookup(config.apiHost, (config.dnsCacheTime || 10) * 1000);
