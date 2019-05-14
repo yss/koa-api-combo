@@ -10,6 +10,7 @@ const PATH_JSON = '/static/test/';
 const RESULT_COMBO_A = [{ a: 1 }];
 const RESULT_COMBO_B = [{ b: 1 }];
 const RESULT_COMBO_C = [{ c: 1 }];
+const RESULT_COMBO_NULL = [null];
 
 /**
  *
@@ -48,7 +49,7 @@ async function simulator(obj, callback) {
     }, obj.combo || {});
 
     try {
-        await Combo('/combo', combo)(ctx, obj.next || async function (){});
+        await Combo.withIgnoreError('/combo', combo)(ctx, obj.next || async function (){});
     } catch (e) {
         console.error(e);
     }
@@ -61,30 +62,16 @@ async function simulator(obj, callback) {
     }
 }
 
-describe('Koa-Api-Combo', function () {
+describe('Koa-Api-Combo-Ignore', function () {
     this.timeout(12000);
     describe('Request', function () {
-        it('should be return correct value when get with http protocol', function () {
+        it('should be return null when get with error path', function () {
             return simulator({
                 ctx: {
-                    urls: PATH_JSON + 'a.json'
+                    urls: PATH_JSON + 'a1.json'
                 }
             }, async function (ctx) {
-                ctx.body.should.be.deepEqual(RESULT_COMBO_A);
-            });
-        });
-
-        it('should be return correct value when get with https protocol', function () {
-            return simulator({
-                ctx: {
-                    urls: '/yss/koa-api-combo/master/test/data/a.json'
-                },
-                combo: {
-                    apiHost: 'raw.githubusercontent.com',
-                    protocol: 'https'
-                }
-            }, async function (ctx) {
-                ctx.body.should.be.deepEqual(RESULT_COMBO_A);
+                ctx.body.should.be.deepEqual(RESULT_COMBO_NULL);
             });
         });
 
@@ -106,10 +93,10 @@ describe('Koa-Api-Combo', function () {
         it('should be return correct value when get multiple requests with http protocol', function () {
             return simulator({
                 ctx: {
-                    urls: PATH_JSON + 'a.json,' + PATH_JSON + 'b.json,' + PATH_JSON + 'c.json'
+                    urls: PATH_JSON + 'a1.json,' + PATH_JSON + 'b.json,' + PATH_JSON + 'c.json'
                 }
             }, async function(ctx) {
-                ctx.body.should.be.deepEqual(RESULT_COMBO_A.concat(RESULT_COMBO_B).concat(RESULT_COMBO_C));
+                ctx.body.should.be.deepEqual(RESULT_COMBO_NULL.concat(RESULT_COMBO_B).concat(RESULT_COMBO_C));
             });
         });
 

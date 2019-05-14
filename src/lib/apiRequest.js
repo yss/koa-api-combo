@@ -40,9 +40,9 @@ class ApiRequest {
         Assert(!!config.apiHost, 'apiHost must exists');
         this.config = {
             host: config.apiHost,
-            family: undefined
+            family: undefined,
+            timeout: (config.timeout || 10) * 1000
         };
-        this.timeout = (config.timeout || 10) * 1000;
 
         if (config.protocol === 'https') {
             this.client = Https;
@@ -101,7 +101,7 @@ class ApiRequest {
     }
 
     get (ctx, path) {
-        let options = Object.assign({
+        const options = Object.assign({
             path,
             agent: this.agent,
             headers: this._getHeaders(ctx)
@@ -131,7 +131,7 @@ class ApiRequest {
                             }
                             break;
                         default:
-                            body = Buffer.concat(data).toString();
+                            body = Buffer.concat(data);
                     }
 
                     const statusCode = res.statusCode;
@@ -150,7 +150,6 @@ class ApiRequest {
                 res.on('error', reject);
             });
 
-            req.setTimeout(this.timeout, req.abort.bind(req));
             req.on('error', reject);
             req.end();
         });

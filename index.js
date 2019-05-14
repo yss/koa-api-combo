@@ -3,20 +3,26 @@
  */
 'use strict';
 const ApiRequest = require('./src/lib/apiRequest.js');
+const Path = require('path');
 
 const REG_URLS = /(\?|&)urls=([^&]+)(&?)/;
+const rejectHandler = function () {
+    return 'null';
+};
 
 /**
  * /combo?urls=/xx,/xxx&...
  *
  * @param {string} path
  * @param {Object} config the same as ApiRequest
+ * @param {boolean} supportIgnoreError
  */
-function Combo (path, config) {
+function Combo (path, config, supportIgnoreError) {
     const apiRequest = new ApiRequest(config);
+    const ignorePath = supportIgnoreError && Path.join(path, 'ignore');
 
     return async function (ctx, next) {
-        if (path !== ctx.path) {
+        if (path !== ctx.path && ignorePath !== ctx.path) {
             return await next();
         }
 
@@ -42,6 +48,9 @@ function Combo (path, config) {
                         url = '/' + url;
                     }
                     url += url.indexOf('?') > -1 ? search.replace('?', '&') : search;
+                    if (supportIgnoreError) {
+                        return apiRequest.get(ctx, url).catch(rejectHandler);
+                    }
                     return apiRequest.get(ctx, url);
                 })
             ).then(function (body) {
@@ -60,5 +69,10 @@ function Combo (path, config) {
             });
     };
 }
+
+Combo.withIgnoreError = function (path, config) {
+    return Combo(path, config, true);
+};
+
 
 module.exports = Combo;
