@@ -7,7 +7,7 @@ const Path = require('path');
 
 const REG_URLS = /(\?|&)urls=([^&]+)(&?)/;
 const rejectHandler = function () {
-    return 'null';
+    return null;
 };
 
 /**
@@ -48,13 +48,24 @@ function Combo (path, config, supportIgnoreError) {
                         url = '/' + url;
                     }
                     url += url.indexOf('?') > -1 ? search.replace('?', '&') : search;
-                    if (supportIgnoreError) {
+                    if (supportIgnoreError && ignorePath === ctx.path) {
                         return apiRequest.get(ctx, url).catch(rejectHandler);
                     }
                     return apiRequest.get(ctx, url);
                 })
-            ).then(function (body) {
-                ctx.body = '[' + body.join(',') + ']';
+            ).then(function (results) {
+                ctx.body = '[' + results.map(function (result) {
+                    if (result === null) {
+                        return 'null';
+                    }
+                    const len = result.length -1;
+                    // first and end char is {} or []
+                    if ((result[0] === 123 && result[len] === 125) ||
+                            (result[0] === 91 && result[len] === 93)) {
+                        return result;
+                    }
+                    return JSON.stringify(result.toString());
+                }).join(',') + ']';
             }).catch(function (err) {
                 if (err && err.status && err.body) {
                     ctx.status = err.status;

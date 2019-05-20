@@ -4,66 +4,16 @@
 'use strict';
 
 require('should');
-const Combo = require('../index.js');
-
+const Combo = require('./lib/combo');
+const { Simulator, Before, After } = require('./lib/simulator');
+const { RESULT_COMBO_A, RESULT_COMBO_B, RESULT_COMBO_C, RESULT_COMBO_D, RESULT_COMBO_D_HTTP, RESULT_COMBO_NULL } = require('./data/data');
 const PATH_JSON = '/static/test/';
-const RESULT_COMBO_A = [{ a: 1 }];
-const RESULT_COMBO_B = [{ b: 1 }];
-const RESULT_COMBO_C = [{ c: 1 }];
-const RESULT_COMBO_NULL = [null];
-
-/**
- *
- * @param {Object} obj
- * @param {Object} obj.ctx
- * @param {Object} obj.combo
- * @param {Function} obj.next
- * @param {Function} callback
- */
-async function simulator(obj, callback) {
-    obj = obj || {};
-
-    let ctx = Object.assign({
-        path: '/combo',
-        get (key) {
-            if (key === 'User-Agent') {
-                return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36' + Math.random().toString().substr(0, 3);
-            }
-            return '';
-        }
-    }, obj.ctx || {});
-
-    if (ctx.urls) {
-        ctx.path += '?urls=' + encodeURIComponent(ctx.urls);
-    }
-
-    if (!ctx.search) {
-        ctx.search = ctx.path.substring(ctx.path.indexOf('?') || 0);
-    }
-
-    ctx.path = ctx.path.split('?')[0];
-
-    let combo = Object.assign({
-        apiHost: 'blog.yssbox.com',
-        protocol: 'https'
-    }, obj.combo || {});
-
-    try {
-        await Combo.withIgnoreError('/combo', combo)(ctx, obj.next || async function (){});
-    } catch (e) {
-        console.error(e);
-    }
-
-    if (callback) {
-        if (typeof ctx.body === 'string') {
-            ctx.body = JSON.parse(ctx.body);
-        }
-        return callback(ctx);
-    }
-}
 
 describe('Koa-Api-Combo-Ignore', function () {
-    this.timeout(12000);
+    this.timeout(9000);
+    const simulator = Simulator.bind(null, true);
+    before(Before);
+    after(After);
     describe('Request', function () {
         it('should be return null when get with error path', function () {
             return simulator({
@@ -75,14 +25,22 @@ describe('Koa-Api-Combo-Ignore', function () {
             });
         });
 
+        it('should be return array with null and correct value when request a error path and correct path', function () {
+            return simulator({
+                ctx: {
+                    urls: PATH_JSON + 'a1.json,' + PATH_JSON + 'a.json'
+                }
+            }, async function (ctx) {
+                ctx.body.should.be.deepEqual(RESULT_COMBO_NULL.concat(RESULT_COMBO_A));
+            });
+        });
+
         it('should be return correct value when get with https protocol and use compress:true', function () {
             return simulator({
                 ctx: {
-                    urls: '/yss/koa-api-combo/master/test/data/b.json'
+                    urls: PATH_JSON + 'b.json'
                 },
                 combo: {
-                    apiHost: 'raw.githubusercontent.com',
-                    protocol: 'https',
                     compress: true
                 }
             }, async function (ctx) {
@@ -93,24 +51,26 @@ describe('Koa-Api-Combo-Ignore', function () {
         it('should be return correct value when get multiple requests with http protocol', function () {
             return simulator({
                 ctx: {
-                    urls: PATH_JSON + 'a1.json,' + PATH_JSON + 'b.json,' + PATH_JSON + 'c.json'
+                    urls: 'a1.json,b.json,d.txt'
+                },
+                combo: {
+                    apiHost: 'localhost',
+                    protocol: 'http',
+                    dnsCacheTime: 0,
+                    port: 1337
                 }
             }, async function(ctx) {
-                ctx.body.should.be.deepEqual(RESULT_COMBO_NULL.concat(RESULT_COMBO_B).concat(RESULT_COMBO_C));
+                ctx.body.should.be.deepEqual(RESULT_COMBO_NULL.concat(RESULT_COMBO_B).concat(RESULT_COMBO_D_HTTP));
             });
         });
 
         it('should be return correct value when get multiple requests with https protocol', function () {
             return simulator({
                 ctx: {
-                    urls: '/yss/koa-api-combo/master/test/data/a.json,/yss/koa-api-combo/master/test/data/b.json,/yss/koa-api-combo/master/test/data/c.json'
-                },
-                combo: {
-                    apiHost: 'raw.githubusercontent.com',
-                    protocol: 'https'
+                    urls: PATH_JSON + 'a.json,' + PATH_JSON + 'd.txt,' + PATH_JSON + 'c.json'
                 }
             }, async function (ctx) {
-                ctx.body.should.be.deepEqual(RESULT_COMBO_A.concat(RESULT_COMBO_B).concat(RESULT_COMBO_C));
+                ctx.body.should.be.deepEqual(RESULT_COMBO_A.concat(RESULT_COMBO_D).concat(RESULT_COMBO_C));
             });
         });
 
@@ -132,11 +92,15 @@ describe('Koa-Api-Combo-Ignore', function () {
         it('should be return correct value when get multiple requests with http protocol.', function () {
             return simulator({
                 ctx: {
-                    path: '/combo?p=1&urls=' + encodeURIComponent(PATH_JSON + 'a.json,' + PATH_JSON + 'b.json?p=2,' + PATH_JSON + 'c.json?c=2') + '&c=1'
+                    path: '/combo/ignore?p=1&urls=' + encodeURIComponent(PATH_JSON + 'a.json,' + PATH_JSON + 'b.json?p=2,' + PATH_JSON + 'c.json?c=2') + '&c=1'
                 }
             }, async function (ctx) {
                 ctx.body.should.be.deepEqual(RESULT_COMBO_A.concat(RESULT_COMBO_B).concat(RESULT_COMBO_C));
             });
         });
+    });
+
+    describe('TEST FOR NORMAL COMBO', function () {
+        Combo(simulator);
     });
 });

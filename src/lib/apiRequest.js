@@ -30,9 +30,10 @@ class ApiRequest {
      *
      * @param {Object} config
      * @param {string} config.apiHost
+     * @param {number} [config.port]
      * @param {string} [config.protocol=http] the protocol that request api server.
      * @param {number} [config.dnsCacheTime=10] the time for dns cache, default 10 seconds, do not use dns cache if set 0.
-     * @param {number} [config.timeout=10] timeout for each api request, default 10 seconds.
+     * @param {number} [config.timeout=7] timeout for each api request, default 7 seconds.
      * @param {boolean} [config.compress=false] whether accept encoding from api server, and only gzip and deflate support.
      * @param {string} [config.headers='Cookie,User-Agent,Referrer'] the header you want to proxy to api server from original request.
      */
@@ -40,9 +41,10 @@ class ApiRequest {
         Assert(!!config.apiHost, 'apiHost must exists');
         this.config = {
             host: config.apiHost,
-            family: undefined,
-            timeout: (config.timeout || 10) * 1000
+            port: config.port,
+            family: undefined
         };
+        this._timeout = (config.timeout || 7) * 1000;
 
         if (config.protocol === 'https') {
             this.client = Https;
@@ -140,7 +142,7 @@ class ApiRequest {
                             status: statusCode,
                             body: {
                                 path,
-                                body
+                                body: body.toString()
                             }
                         });
                     }
@@ -150,6 +152,7 @@ class ApiRequest {
                 res.on('error', reject);
             });
 
+            req.setTimeout(this._timeout, ()=> req.abort());
             req.on('error', reject);
             req.end();
         });
