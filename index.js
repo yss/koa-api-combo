@@ -67,15 +67,12 @@ function Combo (path, config, supportIgnoreError) {
                     return JSON.stringify(result.toString());
                 }).join(',') + ']';
             }).catch(function (err) {
-                if (err && err.status && err.body) {
-                    ctx.status = err.status;
-                    ctx.body = err.body;
-                    return;
-                }
-                ctx.status = 404;
+                const status = (err && err.status) || 424;
+                ctx.status = status;
                 ctx.body = {
-                    status: 404,
-                    message: (err && err.message) || 'request api error.'
+                    status,
+                    path: err && err.path,
+                    message: (err && (err.body || err.message)) || 'error'
                 };
             });
     };

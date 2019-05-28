@@ -140,10 +140,8 @@ class ApiRequest {
                     if (statusCode < 200 || statusCode >= 300) {
                         return reject({
                             status: statusCode,
-                            body: {
-                                path,
-                                body: body.toString()
-                            }
+                            path,
+                            body: body.toString()
                         });
                     }
                     resolve(body);
