@@ -11,6 +11,7 @@ const Combo = require('../../index.js');
  * @param {Object} obj.ctx
  * @param {Object} obj.combo
  * @param {Function} obj.next
+ * @param {Function} obj.isValidUrl
  * @param {Function} callback
  */
 async function simulator(isComboIgnore, obj, callback) {
@@ -36,16 +37,18 @@ async function simulator(isComboIgnore, obj, callback) {
 
     ctx.path = ctx.path.split('?')[0];
 
-    let combo = Object.assign({
+    const combo = Object.assign({
         apiHost: 'blog.yssbox.com',
         protocol: 'https'
     }, obj.combo || {});
 
+    const comboConfig = obj.isValidUrl ? { isValidUrl: obj.isValidUrl } : {};
+
     try {
         if (isComboIgnore) {
-            await Combo.withIgnoreError('/combo', combo)(ctx, obj.next || async function (){});
+            await Combo.withIgnoreError('/combo', combo, comboConfig)(ctx, obj.next || async function (){});
         } else {
-            await Combo('/combo', combo)(ctx, obj.next || async function (){});
+            await Combo('/combo', combo, comboConfig)(ctx, obj.next || async function (){});
         }
     } catch (e) {
         console.error(e);

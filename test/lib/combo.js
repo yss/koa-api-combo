@@ -3,6 +3,7 @@
  */
 'use strict';
 const { RESULT_COMBO_A, RESULT_COMBO_B, RESULT_COMBO_C, RESULT_COMBO_D, RESULT_COMBO_D_HTTP } = require('../data/data');
+const ERROR_PARAMETERS_ERROR = { status: 400, message: 'parameters error' };
 const PATH_JSON = '/static/test/';
 
 module.exports = function (simulator) {
@@ -11,7 +12,7 @@ module.exports = function (simulator) {
             return simulator({
                 ctx: {
                     path: '/combo',
-                    urls: 'a.json'
+                    urls: '/a.json'
                 },
                 combo: {
                     apiHost: 'localhost',
@@ -61,7 +62,7 @@ module.exports = function (simulator) {
             return simulator({
                 ctx: {
                     path: '/combo',
-                    urls: 'a.json,d.txt,c.json'
+                    urls: '/a.json,/d.txt,/c.json'
                 },
                 combo: {
                     apiHost: 'localhost',
@@ -86,6 +87,42 @@ module.exports = function (simulator) {
                 ctx.should.not.have.key('body');
             });
         });
+
+        it('should be return 400 with url miss the first char /', function () {
+            return simulator({
+                ctx: {
+                    path: '/combo',
+                    urls: 'a.json'
+                }
+            }, function (ctx) {
+                ctx.body.should.be.deepEqual(ERROR_PARAMETERS_ERROR);
+            });
+        });
+
+        it('should be return 400 with url that use /combo', function () {
+            return simulator({
+                ctx: {
+                    path: '/combo',
+                    urls: '/combo'
+                }
+            }, function (ctx) {
+                ctx.body.should.be.deepEqual(ERROR_PARAMETERS_ERROR);
+            });
+        });
+
+        it('should be return 400 with url that is not valid url by use custom isValidUrl', function () {
+            return simulator({
+                ctx: {
+                    path: '/combo',
+                    urls: '/abc'
+                },
+                isValidUrl (url) {
+                    return !url.startsWith('/a');
+                }
+            }, function (ctx) {
+                ctx.body.should.be.deepEqual(ERROR_PARAMETERS_ERROR);
+            });
+        });
     });
 
     describe('Query In Different Position', function () {
@@ -99,4 +136,5 @@ module.exports = function (simulator) {
             });
         });
     });
+
 };

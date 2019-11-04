@@ -28,10 +28,15 @@ npm install koa-api-combo --save
 
 ## Middleware
 
-### `Combo(path, config)`
+### `Combo(path, comboConfig, apiRequestConfig)`
 
-* `path` is the route string. And should be exactly equal to `ctx.path`.
-* `config` is an object configuration for api request below.
+* @param {string} path is the route string. And should be exactly equal to `ctx.path`
+* @param {Object} apiRequestConfig the same as ApiRequest
+* @param {Object} comboConfig
+* @param {boolean} [comboConfig.supportIgnoreError] will use null instead the response data if request url error,
+*       and need request by append `/ignore` to the `path` parameter if set to true
+* @param {Function} [comboConfig.isValidUrl] for filter possible illegal url if needed,
+        and response 400 with parameters error
 
 ### `ApiRequest(config)`
 

@@ -51,7 +51,7 @@ describe('Koa-Api-Combo-Ignore', function () {
         it('should be return correct value when get multiple requests with http protocol', function () {
             return simulator({
                 ctx: {
-                    urls: 'a1.json,b.json,d.txt'
+                    urls: '/a1.json,/b.json,/d.txt'
                 },
                 combo: {
                     apiHost: 'localhost',

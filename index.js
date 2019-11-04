@@ -5,7 +5,7 @@
 const ApiRequest = require('./src/lib/apiRequest.js');
 const Path = require('path');
 
-const REG_URLS = /(\?|&)urls=([^&]+)(&?)/;
+const REG_URLS = /(\?|&)urls=([^&?]+)(&?)/;
 const rejectHandler = function () {
     return null;
 };
@@ -13,40 +13,58 @@ const rejectHandler = function () {
 /**
  * /combo?urls=/xx,/xxx&...
  *
- * @param {string} path
- * @param {Object} config the same as ApiRequest
- * @param {boolean} supportIgnoreError
+ * @param {string} path is the route string. And should be exactly equal to `ctx.path`
+ * @param {Object} apiRequestConfig the same as ApiRequest
+ * @param {Object} comboConfig
+ * @param {boolean} [comboConfig.supportIgnoreError] will use null instead the response data if request url error
+ *      and need request by append `/ignore` to the `path` parameter if set to true
+ * @param {Function} [comboConfig.isValidUrl] for filter possible illegal url if needed,
+ *      and response 400 with parameters error
+ *
+ * @returns<Function>
  */
-function Combo (path, config, supportIgnoreError) {
-    const apiRequest = new ApiRequest(config);
+function Combo (path, apiRequestConfig, comboConfig = {}) {
+    const apiRequest = new ApiRequest(apiRequestConfig);
+    const supportIgnoreError = !!comboConfig.supportIgnoreError;
+    const isValidUrl = comboConfig.isValidUrl;
     const ignorePath = supportIgnoreError && Path.join(path, 'ignore');
+
+    function responseParametersError (ctx, message = 'parameters error') {
+        ctx.status = 400;
+        ctx.body = {
+            status: 400,
+            message
+        };
+    }
+    function isValidUrls (urls) {
+        return urls.every(function (url) {
+            return !url.startsWith(path) &&
+                    '/' === url[0] &&
+                    (isValidUrl ? isValidUrl(url) : true);
+        });
+    }
 
     return async function (ctx, next) {
         if (path !== ctx.path && ignorePath !== ctx.path) {
             return await next();
         }
 
-        let urls = '';
-        let search = ctx.search.replace(REG_URLS, function ($0, $1, $2, $3) {
-            urls = decodeURIComponent($2);
+        let urlString = '';
+        const search = ctx.search.replace(REG_URLS, function ($0, $1, $2, $3) {
+            urlString = decodeURIComponent($2);
             return $3 ? $1 : '';
         });
 
-        if (!urls) {
-            ctx.status = 400;
-            ctx.body = {
-                status: 400,
-                message: 'urls must be exists'
-            };
-            return;
-        }
         ctx.type = 'json';
+        if (!urlString) {
+            return responseParametersError(ctx, 'urls must be exists');
+        }
+        const urls = urlString.split(',');
+        if (!isValidUrls(urls)) {
+            return responseParametersError(ctx);
+        }
         await Promise.all(
-                urls.split(',').map(function (url) {
-                    // FIX: inner network probing attack
-                    if (url.indexOf('/') !== 0) {
-                        url = '/' + url;
-                    }
+                urls.map(function (url) {
                     url += url.indexOf('?') > -1 ? search.replace('?', '&') : search;
                     if (supportIgnoreError && ignorePath === ctx.path) {
                         return apiRequest.get(ctx, url).catch(rejectHandler);
@@ -78,8 +96,9 @@ function Combo (path, config, supportIgnoreError) {
     };
 }
 
-Combo.withIgnoreError = function (path, config) {
-    return Combo(path, config, true);
+Combo.withIgnoreError = function (path, config, comboConfig = {}) {
+    comboConfig.supportIgnoreError = true;
+    return Combo(path, config, comboConfig);
 };
 
 
